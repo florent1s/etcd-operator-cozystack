@@ -317,7 +317,11 @@ func (r *EtcdClusterReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return r.scaleUp(ctx, cluster, active)
 	}
 	if current > desired {
-		log.Info("scaling down", "current", current, "desired", desired)
+		if desired == 0 {
+			log.Info("Putting etcdmember to sleep", "current", current, "desired", desired)
+		} else {
+			log.Info("scaling down", "current", current, "desired", desired)
+		}
 		return r.scaleDown(ctx, cluster, running)
 	}
 
@@ -1315,7 +1319,7 @@ func (r *EtcdClusterReconciler) scaleDown(
 	// false. Keeping the CR across the pause means no Create-by-fixed-
 	// name on resume, no PVC reparenting, no cross-resource annotation
 	// dance, and no stale status field to sweep.
-	if cluster.Status.Observed != nil && cluster.Status.Observed.Replicas == 0 && len(members) == 1 {
+	if cluster.Status.Observed != nil && cluster.Status.Observed.Replicas == 0 {
 		if !victim.Spec.Dormant {
 			original := victim.DeepCopy()
 			victim.Spec.Dormant = true
